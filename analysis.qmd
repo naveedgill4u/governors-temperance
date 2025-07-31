@@ -1,0 +1,130 @@
+---
+title: "Temperance and Governors"
+execute: 
+  echo: false
+---
+
+```{r}
+#| label: setup
+#| message: false
+
+library(tidyverse)
+library(gt)
+library(primer.data)
+library(tidymodels)
+library(broom)
+library(marginaleffects)
+
+# Filter the data to make the assumptions of stability and unconfoundedness more reasonable.
+
+x <- governors |>
+  mutate(election_result = ifelse(win_margin > 0, "Win", "Lose")) |>
+  filter(abs(win_margin) <= 5, year > 1945)
+
+# Fit a model. This is our data generating mechanism.
+
+fit_causal <- linear_reg() |>
+  fit(lived_after ~ election_result + win_margin + election_age + party, data = x)
+```
+
+### Background
+
+2) Imagine you are a researcher. You want to know if winning candidates live longer. 
+
+```{r}
+tribble(
+  ~`Candidate`, ~`Years Lived (Lose)`, ~`Years Lived (Win)`, ~`Election Result`, ~`Age`, ~`Win Margin`, ~`Party`, ~`Sex`, ~`Other`,
+  "Joe Smith",        "18*",   "23",   "Win",  "56", "7.2",  "Republican", "Male", "...",
+  "David Jones",     "22",    "28*",  "Lose", "48", "-3.5",  "Democrat",   "Male", "...",
+  "...",               "..." , "..." , "..." , "..." , "..." ,  "..." , "..." , "..."
+) |>
+  gt() |>
+  tab_header(title = "Preceptor Table") |>
+  tab_spanner(label = "Potential Outcomes", columns = c(`Years Lived (Lose)`, `Years Lived (Win)`)) |>
+  tab_spanner(label = "Treatment", columns = c(`Election Result`)) |>
+  tab_spanner(label = "Covariates", columns = c(`Age`, `Win Margin`, `Party`, `Sex`, `Other`)) |>
+  cols_align(align = "center", columns = everything()) |>
+  cols_align(align = "left", columns = c(`Candidate`)) |>
+  fmt_markdown(columns = everything()) |>
+  tab_footnote(
+    footnote = md("Each row is a candidate running for election in 2025."),
+    locations = cells_column_labels(columns = `Candidate`)
+  ) |>
+  tab_footnote(
+    footnote = md("A * indicates a potential outcome that is not observed."),
+    locations = cells_column_spanners(spanners = "Potential Outcomes")
+  ) |>
+  tab_footnote(
+    footnote = md("Years lived: Years lived after election, for both possible election results."),
+    locations = cells_column_spanners(spanners = "Potential Outcomes")
+  ) |>
+  tab_footnote(
+    footnote = md("Other = additional covariates not listed here."),
+    locations = cells_column_labels(columns = `Other`)
+  )
+```
+
+```{r}
+tribble(
+  ~`Source`, ~`Candidate`, ~`Year`, ~`Years Lived (Lose)`, ~`Years Lived (Win)`, ~`Election Result`, ~`Win Margin`, ~`Age`, ~`Party`, ~`Sex`, ~`Other`,
+   "...", "...", "...", "...", "...", "...", "...", "...", "...", "...", "...",
+   "Data", "Earl Warren",  "1946", "18*", "23", "Win", "7.2", "56",  "Republican", "Male", "...",
+   "Data", "George Wallace", "1946", "22", "28*", "Lose", "-3.5", "48", "Democrat", "Male", "...",
+   "Data", "Nelson Rockefeller", "1946", "14*", "17", "Win", "9.0", "54",  "Republican", "Male", "...",
+   "...", "...", "...", "...", "...", "...", "...", "...", "...", "...", "...", 
+   "Preceptor Table", "Joe Smith",  "2025",      "18*",   "23",   "Win",  "56", "7.2",  "Republican", "Male", "...",
+     "Preceptor Table",  "David Jones",  "2025",    "22",    "28*",  "Lose", "48", "-3.5",  "Democrat",   "Male", "...",
+   "...", "...", "...", "...", "...", "...", "...", "...", "...", "...",  "..."
+) |>
+  gt() |>
+  tab_header(title = "Population Table") |>
+  tab_spanner(label = "Unit/Time", columns = c(`Candidate`, `Year`)) |>
+  tab_spanner(label = "Potential Outcomes", columns = c(`Years Lived (Lose)`, `Years Lived (Win)`)) |>
+  tab_spanner(label = "Treatment", columns = c(`Election Result`)) |>
+  tab_spanner(label = "Covariates", columns = c(`Win Margin`, `Age`,  `Party`, `Sex`, `Other`)) |>
+  cols_align(align = "center", columns = everything()) |>
+  cols_align(align = "left", columns = c(`Source`)) |>
+  fmt_markdown(columns = everything()) |>
+  tab_footnote(
+    footnote = md("A * indicates a potential outcome that is not observed."),
+    locations = cells_column_spanners(spanners = "Potential Outcomes")
+  ) |>
+  tab_footnote(
+    footnote = md("Years lived: Number of years lived after election for both possible outcomes."),
+    locations = cells_column_spanners(spanners = "Potential Outcomes")
+  ) |>
+  tab_footnote(
+    footnote = md("Other = additional covariates not listed here. Age is at election."),
+    locations = cells_column_spanners(spanners = "Covariates")
+  )
+```
+
+## DGM
+
+* Take a look at our fitted model. Use `tidy()` to examine the confidence intervals of the parameters. Are they any changes we might consider making?
+
+
+
+* Use AI to create a nice looking table of the parameter values. (Only work on this question if your group is going very fast and has extra time.)
+
+
+* Use AI to create LaTeX code for our DGM. (Only work on this question if your group is going very fast and has extra time.)
+
+
+## Questions and Answers
+
+Recall our original question: Do winning candidates live longer? Well, do they? And do other candidate characteristics matter?
+
+* First, let's look at individual variables which are included in our DGM. Hint: Use `plot_predictions()`
+
+* Second, combine several variables --- and think about which ones you should select --- into a nice looking plot. There is no wrong answer! But some plots look better than others.
+
+* If there is time, use the `draw = FALSE` option to `plot_predictions()` to pull out the raw data. Then, tell an AI about that tibble and ask for some nice ggplot code. Pay special attention to the subtitle.
+
+
+
+## Humility
+
+* What is, truly, your best guess as to the causal effect of winning an election on longevity?
+
+

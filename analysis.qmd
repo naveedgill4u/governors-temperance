@@ -103,8 +103,15 @@ tribble(
 
 * Take a look at our fitted model. Use `tidy()` to examine the confidence intervals of the parameters. Are they any changes we might consider making?
 
+```{r}
+fit_causal <- linear_reg() |>
+  fit(lived_after ~ election_result + win_margin + election_age + party, data = x)
+```
 
-
+```{r}
+fit_causal <- linear_reg() |>
+  fit(lived_after ~ election_result + win_margin + election_age, data = x)
+```
 * Use AI to create a nice looking table of the parameter values. (Only work on this question if your group is going very fast and has extra time.)
 
 
@@ -115,16 +122,67 @@ tribble(
 
 Recall our original question: Do winning candidates live longer? Well, do they? And do other candidate characteristics matter?
 
+```{r}
+fit_causal <- linear_reg() |>
+  fit(lived_after ~ election_result + win_margin + election_age + party, data = x)
+```
+
+
 * First, let's look at individual variables which are included in our DGM. Hint: Use `plot_predictions()`
+
+```{r}
+plot_predictions(fit_causal, by = "election_result")
+```
+
+```{r}
+plot_predictions(fit_causal, by = "win_margin")
+```
+
+```{r}
+plot_predictions(fit_causal, by = "election_age")
+```
+
+```{r}
+plot_predictions(fit_causal, by = "party")
+```
+
+```{r}
+fit_causal |> 
+  plot_predictions(condition = c("election_result", "win_margin", "election_age", "party"))
+```
+
+```{r}
+fit_causal |> 
+  plot_predictions(condition = c("election_result", "election_age", "party"))
+```
 
 * Second, combine several variables --- and think about which ones you should select --- into a nice looking plot. There is no wrong answer! But some plots look better than others.
 
 * If there is time, use the `draw = FALSE` option to `plot_predictions()` to pull out the raw data. Then, tell an AI about that tibble and ask for some nice ggplot code. Pay special attention to the subtitle.
 
+```{r}
+plot_pred_longivity <- fit_causal |> 
+  plot_predictions(condition = c("election_result", "party"), draw = FALSE)
+```
 
+```{r}
+ggplot(plot_pred_longivity, aes(x = party, y = estimate, color = election_result)) +
+  geom_point(position = position_dodge(width = 0.5), size = 3) +
+  geom_errorbar(aes(ymin = conf.low, ymax = conf.high),
+                position = position_dodge(width = 0.5),
+                width = 0.2) +
+  facet_wrap(~ election_age, nrow = 2) +
+  labs(title = "Estimated Years Lived After Election",
+       y = "Estimated Years",
+       x = "Political Party") +
+  theme_minimal(base_size = 13) +
+  theme(legend.position = "top")
+```
 
 ## Humility
 
 * What is, truly, your best guess as to the causal effect of winning an election on longevity?
+
+Answer: winning election has causal effect of 3 years +- 8 if assumptions hold good.
 
 
